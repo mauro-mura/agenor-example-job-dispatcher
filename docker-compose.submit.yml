@@ -1,0 +1,19 @@
+# The way into the service: puts one job per PDF under demo-data/in on the queue and exits.
+#   compose -f docker-compose.yml -f docker-compose.submit.yml run --rm submit
+# A file of its own, not a profile: podman-compose 1.0.6 ignores profiles and `up` would run it.
+services:
+  submit:
+    image: agenor-example-job-dispatcher:demo
+    environment:
+      REDIS_URI: redis://valkey:6379
+      JDBC_URL: jdbc:postgresql://postgres:5432/jobs
+      JDBC_USER: agenor
+      JDBC_PASSWORD: agenor
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      HEARTBEAT_MS: "2000"
+      STORAGE_ROOT: /data
+      NODE_ROLE: submit
+      NODE_ID: submit
+      AGENT_ID: submit
+    volumes:
+      - ./demo-data:/data

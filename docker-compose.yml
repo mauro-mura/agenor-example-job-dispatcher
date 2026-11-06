@@ -1,0 +1,90 @@
+# Valkey, PostgreSQL, Jaeger, one manager and three workers. Nothing restarts a worker that dies:
+# that is deliberate (a job that kills its worker would kill every restart too), bring it back with
+#   compose up -d worker-b
+#
+# Timing is short so that the demo shows a reassignment in seconds:
+#   a job takes SIMULATED_WORK_MS, the deadline is 2 x the estimate + DEADLINE_MARGIN_MS.
+
+x-common: &common
+  image: agenor-example-job-dispatcher:demo
+  build: .
+  environment: &env
+    REDIS_URI: redis://valkey:6379
+    JDBC_URL: jdbc:postgresql://postgres:5432/jobs
+    JDBC_USER: agenor
+    JDBC_PASSWORD: agenor
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    HEARTBEAT_MS: "2000"
+    STORAGE_ROOT: /data
+  volumes:
+    - ./demo-data:/data
+
+x-worker: &worker
+  <<: *common
+  restart: "no"
+  depends_on:
+    postgres: {condition: service_healthy}
+    valkey: {condition: service_healthy}
+    manager: {condition: service_started}
+  environment: &worker-env
+    <<: *env
+    NODE_ROLE: worker
+    WORKER_CAPABILITIES: pdf-to-text
+    CAPACITY: "2"
+    SIMULATED_WORK_MS: "4000"
+    INITIAL_GUESS_MS: "4000"
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_DB: jobs
+      POSTGRES_USER: agenor
+      POSTGRES_PASSWORD: agenor
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agenor -d jobs"]
+      interval: 2s
+      retries: 30
+
+  valkey:
+    image: docker.io/valkey/valkey:8
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      retries: 30
+
+  jaeger:
+    image: docker.io/jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+
+  manager:
+    <<: *common
+    restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
+      valkey: {condition: service_healthy}
+    environment:
+      <<: *env
+      NODE_ROLE: manager
+      NODE_ID: manager
+      AGENT_ID: manager
+      STALE_AFTER_MS: "15000"
+      DEADLINE_MARGIN_MS: "5000"
+    ports:
+      - "${CONSOLE_PORT:-8080}:8080"   # Agenor's console
+      - "${SUMMARY_PORT:-8081}:8081"   # GET /jobs/summary
+
+  worker-a:
+    <<: *worker
+    environment: {<<: *worker-env, NODE_ID: worker-a, AGENT_ID: worker-a}
+
+  worker-b:
+    <<: *worker
+    environment: {<<: *worker-env, NODE_ID: worker-b, AGENT_ID: worker-b}
+
+  worker-c:
+    <<: *worker
+    environment: {<<: *worker-env, NODE_ID: worker-c, AGENT_ID: worker-c}
