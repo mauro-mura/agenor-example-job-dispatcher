@@ -20,8 +20,15 @@ say() { printf '\n== %s\n' "$*"; }
 fail() { printf '\nFAILED: %s\n' "$*" >&2; exit 1; }
 
 say "starting the stack (compose: $COMPOSE)"
-rm -rf demo-data && mkdir -p demo-data/in && cp demo/samples/*.pdf demo-data/in/
 $COMPOSE down -v >/dev/null 2>&1 || true
+# With rootful Docker the workers write demo-data/out as root: the host user cannot delete those
+# files, so a container (root as well) empties the directory instead.
+if ! rm -rf demo-data 2>/dev/null; then
+  $COMPOSE run --rm --no-deps -T --entrypoint sh manager -c 'rm -rf /data/* /data/.[!.]*' >/dev/null
+  rm -rf demo-data
+fi
+mkdir -p demo-data/in
+cp demo/samples/*.pdf demo-data/in/
 $COMPOSE up -d --build >/dev/null
 
 say "waiting for the manager and three workers"
