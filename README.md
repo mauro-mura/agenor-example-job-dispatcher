@@ -50,7 +50,7 @@ One jar, three roles, configured only by environment variables; a missing one fa
 names itself.
 
 ```bash
-java -jar target/agenor-example-job-dispatcher-0.1.0-SNAPSHOT-service.jar     # with NODE_ROLE=manager|worker|submit
+java -jar target/agenor-example-job-dispatcher-0.1.0-service.jar     # with NODE_ROLE=manager|worker|submit
 ```
 
 | Variable | Roles | Default | |

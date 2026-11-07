@@ -6,7 +6,7 @@
 
     <groupId>jobs</groupId>
     <artifactId>agenor-example-job-dispatcher</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>jar</packaging>
     <name>agenor-example-job-dispatcher</name>
     <description>Contract Net job dispatcher built on Agenor</description>
