@@ -1,6 +1,6 @@
 # agenor-example-job-dispatcher
 
-A job dispatcher built on [Agenor](https://github.com/mauro-mura/agenor) 0.40.0. A **manager** hands
+A job dispatcher built on [Agenor](https://github.com/mauro-mura/agenor) 0.41.0. A **manager** hands
 PDF-to-text jobs to **workers** of different speeds by Contract Net (call for proposals, the lowest
 estimate wins), keeps every job in PostgreSQL, and gives a job to someone else when its worker dies.
 
@@ -74,7 +74,7 @@ Agenor's directory in either order.
 ## Tests
 
 ```bash
-mvn test                                                   # 26 unit tests, no containers
+mvn test                                                   # 24 unit tests, no containers
 mvn verify -Pintegration                                   # + integration tests on real Valkey and PostgreSQL
 mvn verify -Pfailure-tests                                 # + the failure tests, several minutes
 ```

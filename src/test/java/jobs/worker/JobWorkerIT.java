@@ -207,31 +207,6 @@ class JobWorkerIT {
     }
 
     @Test
-    @DisplayName("an AGREE delivered twice runs the job once")
-    void aDuplicateAgreeRunsOnce() throws Exception {
-        var kind = "ocr-" + Infra.unique();
-        var processor = FakeProcessor.ok(kind);
-        var rig = rig(5, processor);
-        var job = spec(kind, "dup");
-
-        var proposal = rig.propose(job);
-        rig.manager.agree(proposal, job).join();
-        try {
-            rig.manager.agree(proposal, job).join();
-        } catch (RuntimeException secondReplyRefusedLocally) {
-            // the sender's protocol state does not allow a second AGREE in that conversation:
-            // reach the same (jobId, attempt) through another conversation instead
-            var again = rig.propose(job);
-            rig.manager.agree(again, job).join();
-        }
-
-        take(rig.manager.informs);
-        assertThat(rig.manager.informs.poll(3, TimeUnit.SECONDS))
-                .as("a second INFORM would mean the job ran twice").isNull();
-        assertThat(processor.executions()).isEqualTo(1);
-    }
-
-    @Test
     @DisplayName("a processor that says 'do not retry' produces a typed, non-retryable FAILURE")
     void reportsANonRetryableFailure() throws Exception {
         var kind = "ocr-" + Infra.unique();

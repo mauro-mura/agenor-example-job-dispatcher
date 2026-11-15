@@ -234,12 +234,14 @@ public class JobManager extends BaseAgent {
      * that. After a restart the first tick finds whatever expired meanwhile, so there is no
      * separate recovery code.
      *
-     * <p>The first tick waits five seconds. A manager that was down finds, on start, results that
+     * <p>The first tick waits one second. A manager that was down finds, on start, results that
      * arrived while it was away, and an assignment whose deadline passed in the meantime is
      * overdue only if its result is not among them. Without the wait the sweep ran at start, ahead
-     * of the consumer reading the stream, and rerun jobs that had finished.
+     * of the consumer reading the stream, and rerun jobs that had finished. Those results, read
+     * before the crash or not, come back in the consumer's first read, about a tenth of a second
+     * after the agent starts; the second is a margin over that, not a guarantee.
      */
-    @Behavior(type = CYCLIC, interval = "1s", initialDelay = "5s", autoStart = true)
+    @Behavior(type = CYCLIC, interval = "1s", initialDelay = "1s", autoStart = true)
     public void expireDueAssignments() {
         for (var job : store.dueForReassignment(clock.instant(), config.batchSize())) {
             var span = getTelemetry().spanBuilder("job.expire")

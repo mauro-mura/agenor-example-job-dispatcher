@@ -34,6 +34,11 @@ import java.util.stream.Collectors;
  * of the mailbox's bounded slots. The work runs on a single execution thread, so a bid's
  * estimate, {@code (in flight + 1) x average duration}, is exact rather than hopeful.
  *
+ * <p>An AGREE is not deduplicated here. A handler that succeeded is not run again when only the
+ * acknowledgement of its message was lost, which the transport takes care of; a worker that dies
+ * between the two would have lost an in-memory record of what it ran anyway. A job that does run
+ * twice reports twice, and the manager's fencing discards the second result.
+ *
  * <p>What this worker advertises is what it can do: the capabilities of its directory row are the
  * kinds of the processors it was given.
  */
@@ -42,14 +47,11 @@ public class JobWorker extends BaseAgent {
 
     private static final Logger log = LoggerFactory.getLogger(JobWorker.class);
 
-    private static final int SEEN_CAPACITY = 1000;
-
     private final String id;
     private final Map<String, JobProcessor> processors;
     private final int capacity;
     private final Duration shutdownGrace;
     private final DurationEstimator estimator;
-    private final SeenJobs seen = new SeenJobs(SEEN_CAPACITY);
     private final AtomicInteger inFlight = new AtomicInteger();
     private final DialogueCapability dialogue = new DialogueCapability(this);
     private final ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
@@ -131,10 +133,6 @@ public class JobWorker extends BaseAgent {
         // and then dead-letters it with this exception as the reason.
         var spec = msg.contentAs(JobSpec.class);
 
-        if (!seen.firstTime(spec.jobId() + "#" + spec.attempt())) {
-            log.debug("duplicate AGREE for {} attempt {} ignored", spec.jobId(), spec.attempt());
-            return;
-        }
         var processor = processors.get(spec.kind());
         if (processor == null) {
             report(msg, spec, "unsupported kind: " + spec.kind(), true);

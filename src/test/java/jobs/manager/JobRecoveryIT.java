@@ -187,10 +187,10 @@ class JobRecoveryIT {
                 Duration.ofSeconds(60), 10);
         var env = new ManagerEnv(toClose, config);
         env.startManager();
-        // the sweep's first tick waits five seconds after a start (so results left in the stream
-        // are applied before anything is called overdue); this test is about the sweep not waiting
+        // the sweep's first tick waits a second after a start (so results left in the stream are
+        // applied before anything is called overdue); this test is about the sweep not waiting
         // for auctions, not about starting up
-        pause(6_000);
+        pause(2_000);
 
         // three jobs for a kind whose only worker is a row nobody serves: each auction waits the
         // whole CFP timeout, so the round is busy for about nine seconds

@@ -14,7 +14,7 @@
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <agenor.version>0.40.0</agenor.version>
+        <agenor.version>0.41.0</agenor.version>
         <testcontainers.version>2.0.2</testcontainers.version>
         <junit.version>5.11.3</junit.version>
         <assertj.version>3.27.7</assertj.version>
